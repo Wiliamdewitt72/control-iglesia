@@ -9,3 +9,4 @@ rusqlite = { version = "0.31.0", features = ["bundled"] }
 axum = "0.7"
 tokio = { version = "1.0", features = ["full"] } # Permite que Rust maneje conexiones web
 serde = { version = "1.0", features = ["derive"] } # Traduce JSON a código Rust
+bcrypt = "0.19.1"

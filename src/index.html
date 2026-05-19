@@ -3,76 +3,467 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Control de Ofrendas</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Ofrendas">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#2ecc71">
+    <title>Control de Ofrendas</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f4f7f6; padding: 20px; display: flex; justify-content: center; }
-        .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
-        h2 { color: #333; margin-top: 0; }
-        label { display: block; margin: 15px 0 5px; color: #666; font-weight: bold; }
-        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; }
-        button { width: 100%; background: #2ecc71; color: white; border: none; padding: 12px; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; }
-        button:hover { background: #27ae60; }
-        .msg { margin-top: 15px; padding: 10px; border-radius: 6px; text-align: center; display: none; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f4f7f6; padding: 15px; display: flex; justify-content: center; margin: 0; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 600px; box-sizing: border-box; }
+        h2 { color: #333; margin-top: 0; text-align: center; }
+        label { display: block; margin: 15px 0 5px; color: #666; font-weight: bold; font-size: 14px; }
+        input, select { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; background: #fff; }
+        
+        .btn { width: 100%; background: #2ecc71; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; transition: 0.3s; }
+        .btn:hover { background: #27ae60; }
+        .btn-cancelar { background: #e74c3c; margin-top: 10px; }
+        .btn-aprobar { background: #3498db; }
+        .btn-descargar { background: #2c3e50; padding: 10px; font-size: 13px; margin-top: 0; margin-bottom: 15px;}
+        
+        .msg { margin-top: 15px; padding: 12px; border-radius: 6px; text-align: center; display: none; font-size: 15px; font-weight: bold; }
+        
+        .tabs-menu { display: flex; background: #eee; border-radius: 8px; padding: 4px; margin-bottom: 20px; overflow-x: auto; }
+        .tab-btn { flex: 1; border: none; background: none; padding: 10px 5px; font-size: 13px; font-weight: bold; color: #555; cursor: pointer; border-radius: 6px; text-align: center; white-space: nowrap; }
+        .tab-btn.active { background: white; color: #2ecc71; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        
+        #appView, #viewHistorial, #viewAutorizaciones, #viewGraficas { display: none; }
+        
+        .user-badge { background: #e8f8f5; color: #16a085; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: bold; }
+        .pastor-badge { background: #fcf3cf; color: #d4ac0d; margin-left: 5px; }
+
+        .ticket-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 15px; margin-bottom: 15px; background: #fafafa; border-left: 5px solid #e74c3c; }
+        .ticket-header { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .ticket-monto { font-size: 20px; font-weight: bold; color: #c0392b; }
+        .ticket-motivo { font-size: 15px; color: #333; margin-bottom: 10px; font-style: italic; }
+        .ticket-meta { font-size: 12px; color: #7f8c8d; line-height: 1.6; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        .badge-pendiente { background: #fdebd0; color: #d35400; }
+        .badge-aprobado { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .badge-rechazado { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        
+        .kpi-container { display: flex; gap: 10px; margin-bottom: 15px; }
+        .kpi-card { flex: 1; background: #f8f9fa; border: 1px solid #e9ecef; padding: 12px; border-radius: 8px; text-align: center; }
+        .kpi-title { font-size: 11px; color: #7f8c8d; font-weight: bold; text-transform: uppercase; margin-bottom: 4px; }
+        .kpi-value { font-size: 18px; font-weight: bold; }
+        
+        .filter-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; background: #f1f2f6; padding: 10px; border-radius: 8px; }
+        .filter-group { flex: 1; min-width: 120px; }
+        .filter-group label { margin: 0 0 4px 0; font-size: 11px; color: #555; }
+        .filter-group select, .filter-group input { padding: 8px; font-size: 13px; border-radius: 6px; width: 100%; box-sizing: border-box; }
+        .search-box { width: 100%; margin-bottom: 10px; display: none; }
+        
+        .tabla-contenedor { width: 100%; max-height: 400px; overflow-y: auto; overflow-x: auto; border: 1px solid #eee; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; min-width: 500px; font-size: 13px; }
+        th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; color: #666; font-weight: bold; position: sticky; top: 0; z-index: 1; box-shadow: 0 2px 2px -1px rgba(0,0,0,0.1); }
+        
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 100; }
+        .modal-box { background: white; padding: 25px; border-radius: 12px; width: 90%; max-width: 350px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h2>Registrar Ofrenda</h2>
-    <form id="ofrendaForm">
-        <label for="monto">Monto ($)</label>
-        <input type="number" id="monto" step="0.01" required placeholder="0.00">
-
-        <label for="secretaria">Secretaría</label>
-        <select id="secretaria" required>
-            <option value="1">Niños</option>
-            <option value="2">Educacional</option>
-            <option value="3">General</option>
-        </select>
-
-        <button type="submit">Guardar Ofrenda</button>
+<div class="card" id="loginView">
+    <h2>🔒 Acceso a Tesorería</h2>
+    <form id="loginForm">
+        <label>Usuario / Hermano</label>
+        <input type="text" id="loginNombre" placeholder="Ej: Jacobo Espinosa" required>
+        <label>Contraseña Segura</label>
+        <input type="password" id="loginPin" minlength="8" pattern="(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{8,}" title="Debe contener al menos 8 caracteres, un número, una mayúscula y una minúscula." required>
+        <button type="submit" class="btn">Entrar</button>
     </form>
-    <div id="respuesta" class="msg"></div>
+    <div id="loginError" class="msg" style="background:#f8d7da; color:#721c24;"></div>
+</div>
+
+<div class="card" id="appView">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div>
+            <span class="user-badge" id="nombreUsuario">👤 Usuario</span>
+            <span class="user-badge pastor-badge" id="badgePastor" style="display:none;">👑 Pastor</span>
+        </div>
+        <a href="#" onclick="cerrarSesion()" style="color: #e74c3c; text-decoration: none; font-size: 13px; font-weight: bold;">Salir</a>
+    </div>
+
+    <div class="tabs-menu">
+        <button class="tab-btn active" id="tabReg" onclick="cambiarPestaña('registro')">✍️ Registro</button>
+        <button class="tab-btn" id="tabAuth" onclick="cambiarPestaña('autorizaciones')">📋 Autoriza</button>
+        <button class="tab-btn" id="tabHist" onclick="cambiarPestaña('historial')">📊 Historial</button>
+        <button class="tab-btn" id="tabGraf" onclick="cambiarPestaña('graficas')">📈 Gráficas</button>
+    </div>
+    
+    <div id="viewRegistro">
+        <h2 id="tituloFormulario">Nueva Operación</h2>
+        <form id="ofrendaForm">
+            <label>Tipo de Operación</label>
+            <select id="tipoOperacion" onchange="cambiarColoresOperacion()" style="margin-bottom: 15px; border-color: #2ecc71; border-width: 2px;">
+                <option value="ingreso">🟢 Ingreso (Recibir Dinero)</option>
+                <option value="egreso">🔴 Egreso (Solicitar Gasto)</option>
+            </select>
+            <label>Monto ($)</label>
+            <input type="number" id="monto" step="0.01" required placeholder="0.00">
+            <label>Destino / Origen</label>
+            <select id="secretaria" required></select>
+            <label>Motivo de la Operación (Obligatorio)</label>
+            <input type="text" id="motivo" placeholder="Ej: Ofrenda dominical / Compra papelería" required>
+            <button type="submit" class="btn" id="btnPreparar">Preparar Registro</button>
+        </form>
+        <div id="respuesta" class="msg"></div>
+    </div>
+
+    <div id="viewAutorizaciones">
+        <h2>Tickets de Egreso</h2>
+        <div id="respuestaAuth" class="msg" style="margin-bottom: 15px;"></div>
+        <div id="ticketsContenedor"></div>
+    </div>
+
+    <div id="viewHistorial">
+        <h2>Libro Mayor (Auditoría)</h2>
+        <button id="btnDescargarCsv" class="btn btn-descargar" style="display: none;" onclick="descargarCSV()">📥 Descargar en Excel (.CSV)</button>
+        <div class="kpi-container">
+            <div class="kpi-card"><div class="kpi-title">Balance Filtrado</div><div class="kpi-value" id="kpiSuma">$0.00</div></div>
+            <div class="kpi-card"><div class="kpi-title">Movimientos</div><div class="kpi-value" id="kpiConteo" style="color: #34495e;">0</div></div>
+        </div>
+        <div class="filter-bar">
+            <div class="search-box" id="cajaBuscador"><input type="text" id="filtroTexto" placeholder="🔍 Buscar nombre, motivo..." oninput="procesarTabla()"></div>
+            <div class="filter-group"><label>Secretaría</label><select id="filtroSecretaria" onchange="procesarTabla()"></select></div>
+            <div class="filter-group"><label>Filas</label><select id="filtroLimite" onchange="procesarTabla()"><option value="10">10 movs</option><option value="50">50 movs</option><option value="0">Todo</option></select></div>
+        </div>
+        <div class="tabla-contenedor">
+            <table><thead><tr><th>Monto</th><th>Secretaría</th><th>Motivo</th><th>Responsable</th><th>Fecha</th></tr></thead><tbody id="tablaCuerpo"></tbody></table>
+        </div>
+    </div>
+
+    <div id="viewGraficas">
+        <h2>Análisis Financiero</h2>
+        
+        <div class="filter-bar" style="background: #e8f8f5;">
+            <div class="filter-group">
+                <label>Tipo de Gráfica</label>
+                <select id="graficaTipo" onchange="procesarYDibujarGrafica()" style="font-weight: bold; color: #2c3e50;">
+                    <option value="acumulado">📈 Balance Acumulado</option>
+                    <option value="tendencia">📊 Ingresos vs Egresos</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Período de Tiempo</label>
+                <select id="graficaTiempo" onchange="procesarYDibujarGrafica()">
+                    <option value="todo" selected>Histórico Completo</option>
+                    <option value="año">Último Año (Por Mes)</option>
+                    <option value="trimestre">Último Trimestre (Por Sem)</option>
+                    <option value="mes">Último Mes (Por Día)</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>Secretaría</label>
+                <select id="graficaSecretaria" onchange="procesarYDibujarGrafica()"></select>
+            </div>
+        </div>
+
+        <div style="position: relative; height: 350px; width: 100%; margin-top: 10px;">
+            <canvas id="graficaPrincipal"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="modal">
+    <div class="modal-box">
+        <h3 id="modalTitulo">¿Confirmar?</h3>
+        <div class="modal-data" id="modalMonto" style="color: #2ecc71;">$0.00</div>
+        <div style="color: #7f8c8d; font-size: 14px;" id="modalSecretaria">Secretaría</div>
+        <div style="color: #333; font-size: 13px; margin: 10px 0; font-style: italic;" id="modalMotivoDesc"></div>
+        <button class="btn" id="btnConfirmar">✅ Sí, Confirmar</button>
+        <button class="btn btn-cancelar" onclick="cerrarModal()">❌ Cancelar</button>
+    </div>
 </div>
 
 <script>
-    document.getElementById('ofrendaForm').addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const respuestaDiv = document.getElementById('respuesta');
+    let sesion = { id: null, pin: null, es_pastor: false, secretarias: [] };
+    let datosPendientes = null;
+    let registrosBaseDatos = [];
+    let registrosFiltradosActuales = [];
+    let chartInstancia = null;
+
+    function formatearFecha(fechaSQL) {
+        if(!fechaSQL) return "Pendiente";
+        const d = new Date(fechaSQL.replace(' ', 'T') + 'Z');
+        return d.toLocaleDateString('es-MX', { year: 'numeric', month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' }).replace(',', '');
+    }
+
+    function cambiarColoresOperacion() {
+        const tipo = document.getElementById('tipoOperacion').value;
+        document.getElementById('tipoOperacion').style.borderColor = tipo === 'egreso' ? '#e74c3c' : '#2ecc71';
+    }
+
+    function cambiarPestaña(destino) {
+        ['Reg', 'Auth', 'Hist', 'Graf'].forEach(t => document.getElementById(`tab${t}`).classList.remove('active'));
+        ['Registro', 'Autorizaciones', 'Historial', 'Graficas'].forEach(v => document.getElementById(`view${v}`).style.display = 'none');
+        document.getElementById('respuesta').style.display = 'none'; 
         
-        const datos = {
-            monto: parseFloat(document.getElementById('monto').value),
-            secretaria_id: parseInt(document.getElementById('secretaria').value)
-        };
+        if (destino === 'registro') { document.getElementById('tabReg').classList.add('active'); document.getElementById('viewRegistro').style.display = 'block'; } 
+        else if (destino === 'autorizaciones') { document.getElementById('tabAuth').classList.add('active'); document.getElementById('viewAutorizaciones').style.display = 'block'; cargarTickets(); } 
+        else if (destino === 'historial') { document.getElementById('tabHist').classList.add('active'); document.getElementById('viewHistorial').style.display = 'block'; cargarDatosServidor('tabla'); }
+        else if (destino === 'graficas') { document.getElementById('tabGraf').classList.add('active'); document.getElementById('viewGraficas').style.display = 'block'; cargarDatosServidor('grafica'); }
+    }
 
-        try {
-            const response = await fetch('/api/ofrendas', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(datos)
-            });
+    // --- NUEVO MOTOR DE GRÁFICAS FINANCIERAS ---
+    function procesarYDibujarGrafica() {
+        const filtroSec = document.getElementById('graficaSecretaria').value;
+        const filtroTiempo = document.getElementById('graficaTiempo').value;
+        const tipoGrafica = document.getElementById('graficaTipo').value;
 
-            const texto = await response.text();
-            respuestaDiv.style.display = 'block';
-            
-            if (response.ok) {
-                respuestaDiv.style.background = '#d4edda';
-                respuestaDiv.style.color = '#155724';
-                respuestaDiv.innerText = "¡Éxito! " + texto;
-                document.getElementById('ofrendaForm').reset();
-            } else {
-                respuestaDiv.style.background = '#f8d7da';
-                respuestaDiv.style.color = '#721c24';
-                respuestaDiv.innerText = "Error: " + texto;
-            }
-        } catch (err) {
-            alert("No se pudo conectar con el servidor Rust.");
+        // 1. Filtrar por Secretaría
+        let datos = registrosBaseDatos;
+        if (filtroSec !== "TODAS") { datos = datos.filter(r => r.secretaria === filtroSec); }
+
+        // 2. ORDENAR CRONOLÓGICAMENTE (Esto arregla el Eje X desordenado)
+        datos.sort((a, b) => new Date(a.fecha.replace(' ', 'T') + 'Z') - new Date(b.fecha.replace(' ', 'T') + 'Z'));
+
+        if (datos.length === 0) {
+            if (chartInstancia) chartInstancia.destroy();
+            return;
         }
+
+        // 3. Determinar el límite de tiempo hacia atrás
+        const ultimaFecha = new Date(datos[datos.length - 1].fecha.replace(' ', 'T') + 'Z');
+        let fechaLimite = new Date(0); // Histórico completo por defecto
+        let formatoEtiqueta = 'mes'; 
+
+        if (filtroTiempo === 'mes') {
+            fechaLimite = new Date(ultimaFecha); fechaLimite.setMonth(fechaLimite.getMonth() - 1);
+            formatoEtiqueta = 'dia'; // Agrupa por día para más detalles
+        } else if (filtroTiempo === 'trimestre') {
+            fechaLimite = new Date(ultimaFecha); fechaLimite.setMonth(fechaLimite.getMonth() - 3);
+            formatoEtiqueta = 'semana'; // Agrupa por semana
+        } else if (filtroTiempo === 'año') {
+            fechaLimite = new Date(ultimaFecha); fechaLimite.setFullYear(fechaLimite.getFullYear() - 1);
+            formatoEtiqueta = 'mes';
+        }
+
+        // 4. Calcular el Balance Histórico ANTERIOR a la fecha límite (Vital para el Acumulado)
+        let saldoAcumulado = datos.filter(r => new Date(r.fecha.replace(' ', 'T') + 'Z') < fechaLimite)
+                                  .reduce((acc, r) => acc + r.monto, 0);
+
+        // 5. Agrupar los datos en el rango seleccionado
+        const datosFiltrados = datos.filter(r => new Date(r.fecha.replace(' ', 'T') + 'Z') >= fechaLimite);
+        const grupos = {};
+
+        datosFiltrados.forEach(r => {
+            const f = new Date(r.fecha.replace(' ', 'T') + 'Z');
+            let etiqueta = '';
+            
+            if (formatoEtiqueta === 'dia') {
+                etiqueta = f.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+            } else if (formatoEtiqueta === 'semana') {
+                // Truco matemático para agrupar por Lunes de la semana
+                const dia = f.getDay(); const diff = f.getDate() - dia + (dia === 0 ? -6 : 1);
+                const lunes = new Date(f.setDate(diff));
+                etiqueta = "Sem " + lunes.toLocaleDateString('es-MX', { day: '2-digit', month: 'short' });
+            } else {
+                const mesAnio = f.toLocaleDateString('es-MX', { month: 'short', year: 'numeric' });
+                etiqueta = mesAnio.charAt(0).toUpperCase() + mesAnio.slice(1);
+            }
+
+            if (!grupos[etiqueta]) grupos[etiqueta] = { ingresos: 0, egresos: 0 };
+            
+            if (r.monto > 0) grupos[etiqueta].ingresos += r.monto;
+            else grupos[etiqueta].egresos += Math.abs(r.monto);
+        });
+
+        // 6. Preparar arreglos para Chart.js
+        const etiquetas = Object.keys(grupos);
+        const dataIngresos = [];
+        const dataEgresos = [];
+        const dataAcumulado = [];
+
+        etiquetas.forEach(etq => {
+            dataIngresos.push(grupos[etq].ingresos);
+            dataEgresos.push(grupos[etq].egresos);
+            
+            // Le sumamos a la caja fuerte lo de este periodo y guardamos el punto
+            saldoAcumulado += (grupos[etq].ingresos - grupos[etq].egresos);
+            dataAcumulado.push(saldoAcumulado);
+        });
+
+        // 7. Dibujar la Gráfica
+        if (chartInstancia) chartInstancia.destroy();
+        const ctx = document.getElementById('graficaPrincipal').getContext('2d');
+
+        if (tipoGrafica === 'tendencia') {
+            chartInstancia = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: etiquetas,
+                    datasets: [
+                        { label: 'Ingresos', data: dataIngresos, borderColor: '#2ecc71', backgroundColor: 'rgba(46, 204, 113, 0.2)', borderWidth: 3, fill: true, tension: 0.4 },
+                        { label: 'Egresos', data: dataEgresos, borderColor: '#e74c3c', backgroundColor: 'rgba(231, 76, 60, 0.2)', borderWidth: 3, fill: true, tension: 0.4 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } }, scales: { y: { beginAtZero: true } } }
+            });
+        } else {
+            // Gráfica de Balance Acumulado
+            chartInstancia = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: etiquetas,
+                    datasets: [
+                        { label: 'Caja / Balance Acumulado ($)', data: dataAcumulado, borderColor: '#3498db', backgroundColor: 'rgba(52, 152, 219, 0.3)', borderWidth: 4, fill: true, tension: 0.2, pointRadius: 4 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+        }
+    }
+
+    async function cargarTickets() {
+        const div = document.getElementById('ticketsContenedor');
+        div.innerHTML = '<p style="text-align:center; color:#999;">Cargando tickets...</p>';
+        try {
+            const res = await fetch(`/api/solicitudes?tesorero_id=${sesion.id}&pin=${sesion.pin}`);
+            const tickets = await res.json();
+            div.innerHTML = '';
+            if (tickets.length === 0) { div.innerHTML = '<p style="text-align:center; color:#999;">No hay solicitudes registradas.</p>'; return; }
+
+            tickets.forEach(t => {
+                const depPermiso = sesion.secretarias.find(s => s.nombre === t.secretaria);
+                const puedeAprobar = sesion.es_pastor || (depPermiso && depPermiso.puede_autorizar);
+                
+                let badge = '<span class="badge badge-pendiente">⏳ Pendiente</span>';
+                if (t.estado === 'APROBADO') badge = '<span class="badge badge-aprobado">✅ Aprobado</span>';
+                if (t.estado === 'RECHAZADO') badge = '<span class="badge badge-rechazado">❌ Rechazado</span>';
+                
+                let botonHTML = '';
+                if (t.estado === 'PENDIENTE' && puedeAprobar) {
+                    botonHTML = `<div style="display:flex; gap:10px; margin-top:15px;"><button class="btn btn-aprobar" style="margin-top:0; flex:1;" onclick="procesarTicket(${t.id}, 'aprobar')">✅ Aprobar</button><button class="btn btn-cancelar" style="margin-top:0; flex:1;" onclick="procesarTicket(${t.id}, 'rechazar')">❌ Rechazar</button></div>`;
+                }
+                div.innerHTML += `<div class="ticket-card" style="border-left-color: ${t.estado === 'APROBADO' ? '#2ecc71' : (t.estado === 'RECHAZADO' ? '#95a5a6' : '#e74c3c')};"><div class="ticket-header">${badge} <span class="ticket-monto">-$${t.monto.toFixed(2)}</span></div><div class="ticket-motivo">"${t.motivo}"</div><div class="ticket-meta"><strong>De:</strong> ${t.secretaria}<br><strong>Solicita:</strong> ${t.solicitante}<br><strong>Fecha:</strong> ${formatearFecha(t.fecha)}</div>${botonHTML}</div>`;
+            });
+        } catch (e) { div.innerHTML = '<p style="text-align:center; color:#e74c3c;">Error de conexión.</p>'; }
+    }
+
+    async function procesarTicket(id_ticket, accion) {
+        if(!confirm(`¿Estás seguro de ${accion} este gasto?`)) return;
+        const res = await fetch(`/api/${accion}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ticket_id: id_ticket, tesorero_id: sesion.id, pin: sesion.pin }) });
+        const msg = document.getElementById('respuestaAuth'); msg.style.display = 'block';
+        if (res.ok) { msg.style.background = '#d4edda'; msg.style.color = '#155724'; msg.innerText = `¡Ticket ${accion === 'aprobar' ? 'Aprobado y Descontado' : 'Rechazado'}!`; cargarTickets(); } 
+        else { msg.style.background = '#f8d7da'; msg.style.color = '#721c24'; msg.innerText = "Error al procesar."; }
+        setTimeout(() => msg.style.display = 'none', 4000);
+    }
+
+    async function cargarDatosServidor(destinoVisual) {
+        const res = await fetch(`/api/historial?tesorero_id=${sesion.id}&pin=${sesion.pin}`);
+        if (res.ok) { 
+            registrosBaseDatos = await res.json(); 
+            if (destinoVisual === 'tabla') { procesarTabla(); }
+            else if (destinoVisual === 'grafica') { procesarYDibujarGrafica(); }
+        }
+    }
+
+    function procesarTabla() {
+        const filtroSec = document.getElementById('filtroSecretaria').value;
+        const filtroLim = parseInt(document.getElementById('filtroLimite').value);
+        const filtroTexto = document.getElementById('filtroTexto').value.toLowerCase();
+        
+        let datos = registrosBaseDatos;
+        if (filtroSec !== "TODAS") { datos = datos.filter(r => r.secretaria === filtroSec); }
+        if (filtroTexto !== "") {
+            datos = datos.filter(r => (r.motivo && r.motivo.toLowerCase().includes(filtroTexto)) || r.tesorero.toLowerCase().includes(filtroTexto) || formatearFecha(r.fecha).toLowerCase().includes(filtroTexto));
+        }
+        
+        const suma = datos.reduce((acc, c) => acc + c.monto, 0);
+        const kpi = document.getElementById('kpiSuma');
+        kpi.innerText = `$${suma.toFixed(2)}`; kpi.style.color = suma < 0 ? '#c0392b' : '#27ae60';
+        document.getElementById('kpiConteo').innerText = datos.length;
+        if (filtroLim > 0) datos = datos.slice(0, filtroLim);
+        registrosFiltradosActuales = datos;
+
+        const tbody = document.getElementById('tablaCuerpo'); tbody.innerHTML = '';
+        datos.forEach(reg => {
+            const colorMonto = reg.monto < 0 ? '#e74c3c' : '#2c3e50'; 
+            const motivoTexto = reg.motivo ? reg.motivo : "-";
+            tbody.innerHTML += `<tr><td style="color:${colorMonto};"><strong>$${reg.monto.toFixed(2)}</strong></td><td><span style="background:#f1f2f6; padding:3px 6px; border-radius:4px; font-size:11px;">${reg.secretaria}</span></td><td style="font-size:11px; font-style:italic;">${motivoTexto}</td><td style="font-size:11px; color:#555;">${reg.tesorero.split(' ')[0]}</td><td style="font-size:10px; color:#7f8c8d;">${formatearFecha(reg.fecha)}</td></tr>`;
+        });
+    }
+
+    function descargarCSV() {
+        if (registrosFiltradosActuales.length === 0) { alert("No hay datos para exportar."); return; }
+        let csvContent = "Fecha,Operacion,Monto,Secretaria,Motivo,Responsable\n";
+        registrosFiltradosActuales.forEach(r => {
+            const fecha = formatearFecha(r.fecha).replace(/,/g, '');
+            const operacion = r.monto < 0 ? 'EGRESO' : 'INGRESO';
+            const monto = Math.abs(r.monto).toFixed(2);
+            const motivo = r.motivo ? `"${r.motivo.replace(/"/g, '""')}"` : "";
+            csvContent += `${fecha},${operacion},${monto},${r.secretaria},${motivo},${r.tesorero}\n`;
+        });
+        const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a"); link.setAttribute("href", URL.createObjectURL(blob));
+        link.setAttribute("download", `auditoria_iglesia_${new Date().getTime()}.csv`);
+        link.style.visibility = 'hidden'; document.body.appendChild(link); link.click(); document.body.removeChild(link);
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const pin = document.getElementById('loginPin').value;
+        const res = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nombre: document.getElementById('loginNombre').value, pin: pin }) });
+        if (res.ok) {
+            const data = await res.json();
+            sesion = { id: data.tesorero_id, pin: pin, es_pastor: data.es_pastor, secretarias: data.secretarias };
+            document.getElementById('nombreUsuario').innerText = `👤 ${data.nombre}`;
+            
+            if (data.es_pastor) { document.getElementById('badgePastor').style.display = 'inline-block'; document.getElementById('cajaBuscador').style.display = 'block'; document.getElementById('btnDescargarCsv').style.display = 'block'; } 
+            else { document.getElementById('badgePastor').style.display = 'none'; document.getElementById('cajaBuscador').style.display = 'none'; document.getElementById('btnDescargarCsv').style.display = 'none'; }
+
+            // Inyectar secretarías permitidas en el Formulario, en el Historial y en las Gráficas
+            const selSec = document.getElementById('secretaria'); 
+            const filSec = document.getElementById('filtroSecretaria');
+            const filGrafSec = document.getElementById('graficaSecretaria');
+            
+            selSec.innerHTML = ''; 
+            filSec.innerHTML = '<option value="TODAS">📁 Todas las áreas</option>';
+            filGrafSec.innerHTML = '<option value="TODAS">📁 Todas mis áreas</option>';
+            
+            data.secretarias.forEach(sec => { 
+                selSec.innerHTML += `<option value="${sec.id}">${sec.nombre}</option>`; 
+                filSec.innerHTML += `<option value="${sec.nombre}">${sec.nombre}</option>`; 
+                filGrafSec.innerHTML += `<option value="${sec.nombre}">${sec.nombre}</option>`; 
+            });
+            
+            document.getElementById('loginView').style.display = 'none'; document.getElementById('appView').style.display = 'block'; cambiarPestaña('registro');
+        } else {
+            const err = document.getElementById('loginError'); err.innerText = "Usuario o Contraseña incorrectos."; err.style.display = 'block';
+        }
+    });
+
+    function cerrarSesion() { location.reload(); }
+
+    document.getElementById('ofrendaForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const sel = document.getElementById('secretaria'); const tipo = document.getElementById('tipoOperacion').value;
+        datosPendientes = { tipo: tipo, monto: parseFloat(document.getElementById('monto').value), secretaria_id: parseInt(sel.value), secretaria_nombre: sel.options[sel.selectedIndex].text, tesorero_id: sesion.id, pin: sesion.pin, motivo: document.getElementById('motivo').value };
+        document.getElementById('modalTitulo').innerText = tipo === 'ingreso' ? "¿Confirmar Ofrenda?" : "¿Solicitar Egreso?";
+        document.getElementById('modalMonto').innerText = `$${datosPendientes.monto.toFixed(2)}`; document.getElementById('modalMonto').style.color = tipo === 'ingreso' ? '#2ecc71' : '#e74c3c';
+        document.getElementById('modalSecretaria').innerText = (tipo === 'ingreso' ? "Destino: " : "Sacar de: ") + datosPendientes.secretaria_nombre;
+        document.getElementById('modalMotivoDesc').innerText = `"${datosPendientes.motivo}"`; 
+        document.getElementById('modal').style.display = 'flex';
+    });
+
+    function cerrarModal() { document.getElementById('modal').style.display = 'none'; }
+
+    document.getElementById('btnConfirmar').addEventListener('click', async () => {
+        document.getElementById('btnConfirmar').disabled = true;
+        const textoGuardado = datosPendientes.tipo === 'ingreso' ? "¡Ofrenda guardada exitosamente!" : "¡Solicitud enviada a revisión!"; 
+        const endpoint = datosPendientes.tipo === 'ingreso' ? '/api/ofrendas' : '/api/solicitudes';
+        
+        const res = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datosPendientes) });
+        
+        cerrarModal(); document.getElementById('btnConfirmar').disabled = false;
+        
+        const respDiv = document.getElementById('respuesta'); respDiv.style.display = 'block';
+        if (res.ok) {
+            respDiv.style.background = '#d4edda'; respDiv.style.color = '#155724'; respDiv.innerText = textoGuardado; 
+            document.getElementById('monto').value = ''; document.getElementById('motivo').value = '';
+        } else { respDiv.style.background = '#f8d7da'; respDiv.style.color = '#721c24'; respDiv.innerText = "Error en la operación."; }
+        datosPendientes = null; 
     });
 </script>
 </body>
